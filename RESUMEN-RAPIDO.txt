@@ -1,0 +1,161 @@
+================================================================================================
+  SOLUCIÓN RÁPIDA: INFORME HTML JACOCO EN JENKINS
+================================================================================================
+
+PROBLEMA:
+  Jenkins falla con: "ERROR: Specified HTML directory 'coverage' does not exist"
+
+SOLUCIÓN APLICADA:
+  ✓ pom.xml modificado (agregado formato HTML a JaCoCo)
+  ✓ Jenkinsfile creado (pipeline completo)
+  ✓ Script copy-jacoco-report.bat creado
+  ✓ Guía completa en JENKINS-COVERAGE-SETUP.md
+
+================================================================================================
+  OPCIÓN 1: USAR JENKINSFILE (RECOMENDADO - MÁS FÁCIL)
+================================================================================================
+
+1. En Jenkins: New Item → Pipeline
+2. Pipeline Definition: "Pipeline script from SCM"
+3. SCM: Git → Tu repositorio
+4. Script Path: Jenkinsfile
+5. Guardar y ejecutar
+
+El Jenkinsfile hace TODO automáticamente:
+  - Compila el proyecto
+  - Ejecuta tests
+  - Genera informe JaCoCo HTML
+  - Copia a directorio 'coverage'
+  - Publica el HTML en Jenkins
+
+REQUISITO: Configurar JDK en Jenkins (Manage Jenkins → Global Tool Configuration)
+  - Name: JDK17
+  - JAVA_HOME: C:\Program Files\Java\jdk-17 (ajusta tu ruta)
+
+================================================================================================
+  OPCIÓN 2: MODIFICAR TU JOB ACTUAL (FREESTYLE)
+================================================================================================
+
+En tu job existente, REEMPLAZA el paso de build con:
+
+  .\mvnw.cmd clean test jacoco:report
+  if not exist coverage mkdir coverage
+  xcopy /E /I /Y target\site\jacoco\* coverage\
+
+Y en Post-build Actions, asegúrate de que "Publish HTML reports" tenga:
+  - HTML directory to archive: coverage
+  - Index page: index.html
+
+================================================================================================
+  OPCIÓN 3: SIN COPIAR ARCHIVOS (MÁS SIMPLE)
+================================================================================================
+
+En tu job actual:
+
+1. Build step:
+   .\mvnw.cmd clean test jacoco:report
+
+2. En "Publish HTML reports", cambiar:
+   - HTML directory to archive: target/site/jacoco  (en vez de "coverage")
+   - Index page: index.html
+
+================================================================================================
+  COMANDOS PARA PROBAR LOCALMENTE (WINDOWS)
+================================================================================================
+
+1. Abrir cmd.exe o PowerShell en la carpeta del proyecto
+
+2. Configurar JAVA_HOME (si no está definido):
+   set "JAVA_HOME=C:\Program Files\Java\jdk-17"
+   set "PATH=%JAVA_HOME%\bin;%PATH%"
+
+3. Generar el informe:
+   .\mvnw.cmd clean test jacoco:report
+
+4. Verificar que se creó:
+   dir target\site\jacoco\index.html
+
+5. Abrir en navegador:
+   start target\site\jacoco\index.html
+
+6. (Opcional) Copiar a 'coverage':
+   copy-jacoco-report.bat
+
+================================================================================================
+  ARCHIVOS CREADOS
+================================================================================================
+
+  ✓ pom.xml                      (MODIFICADO - agregado formato HTML)
+  ✓ Jenkinsfile                  (NUEVO - pipeline completo)
+  ✓ copy-jacoco-report.bat       (NUEVO - script de copia)
+  ✓ JENKINS-COVERAGE-SETUP.md    (NUEVO - guía detallada)
+  ✓ RESUMEN-RAPIDO.txt           (ESTE ARCHIVO)
+
+================================================================================================
+  VERIFICACIÓN RÁPIDA
+================================================================================================
+
+Después de ejecutar el build en Jenkins, deberías ver:
+
+  ✓ Directorio: workspace/target/site/jacoco/
+  ✓ Archivo: target/site/jacoco/index.html
+  ✓ Directorio: workspace/coverage/ (si usas copia)
+  ✓ Link en Jenkins: "JaCoCo Coverage Report"
+
+================================================================================================
+  ¿QUÉ HACE EL CAMBIO EN POM.XML?
+================================================================================================
+
+ANTES (solo XML):
+  <formats>
+    <format>XML</format>
+  </formats>
+
+DESPUÉS (XML + HTML):
+  <formats>
+    <format>XML</format>
+    <format>HTML</format>   ← AGREGADO
+  </formats>
+
+Resultado: Maven ahora genera:
+  - target/site/jacoco/index.html    (para Jenkins/navegador)
+  - target/site/jacoco/jacoco.xml    (para SonarQube)
+  - target/site/jacoco/jacoco.csv    (para Excel)
+
+================================================================================================
+  TROUBLESHOOTING
+================================================================================================
+
+ERROR: "JAVA_HOME not found"
+  → Configura JAVA_HOME en el sistema o en el Jenkinsfile
+
+ERROR: "Plugin 'jacoco-maven-plugin' not found"
+  → Ejecuta: .\mvnw.cmd validate (descarga plugins)
+
+ERROR: El informe muestra 0% cobertura
+  → Verifica que los tests se ejecuten (revisa logs)
+  → El plugin prepare-agent debe ejecutarse antes de los tests (ya está configurado)
+
+ERROR: "xcopy" falla
+  → Verifica que target\site\jacoco exista antes de copiar
+  → Usa el script copy-jacoco-report.bat que valida esto
+
+================================================================================================
+  SIGUIENTE PASO RECOMENDADO
+================================================================================================
+
+→ Usa OPCIÓN 1 (Jenkinsfile) si quieres la solución más automática
+→ Usa OPCIÓN 3 (sin copiar) si quieres la solución más simple
+→ Lee JENKINS-COVERAGE-SETUP.md para detalles completos
+
+================================================================================================
+  CONTACTO
+================================================================================================
+
+Si algo no funciona:
+1. Revisa los logs de consola de Jenkins
+2. Verifica que el informe se genere localmente primero
+3. Confirma que el plugin "HTML Publisher" esté instalado en Jenkins
+
+================================================================================================
+
