@@ -66,21 +66,18 @@ pipeline {
 
         stage('Quality Gate Check') {
             steps {
-                timeout(time: 10, unit: 'MINUTES') {
-                    waitForQualityGate abortPipeline: true
-                }
-            }
-            post {
-                success {
-                    echo "✅ QUALITY GATE PASSED - El código cumple los estándares de calidad"
-                    script {
-                        currentBuild.description += " | ✅ Quality Gate"
-                    }
-                }
-                failure {
-                    echo "❌ QUALITY GATE FAILED - Revisar métricas en SonarQube"
-                    script {
-                        currentBuild.description += " | ❌ Quality Gate"
+                script {
+                    // Espera más tiempo y maneja mejor el timeout
+                    timeout(time: 20, unit: 'MINUTES') {
+                        echo "⏳ Esperando resultado de Quality Gate..."
+                        def qg = waitForQualityGate()
+
+                        if (qg.status == 'OK') {
+                            echo "✅ QUALITY GATE PASSED - El código cumple los estándares de calidad"
+                            currentBuild.description += " | ✅ Quality Gate"
+                        } else {
+                            error "❌ QUALITY GATE FAILED - Status: ${qg.status}. Revisar métricas en SonarQube"
+                        }
                     }
                 }
             }
@@ -95,9 +92,10 @@ pipeline {
                 echo "Build: #${currentBuild.number}"
                 echo "Estado: ${currentBuild.result ?: 'SUCCESS'}"
                 echo "URL: ${env.BUILD_URL}"
+                echo "URL SonarQube: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
 
                 if (currentBuild.result == 'FAILURE') {
-                    echo "🔍 Revisar SonarQube para detalles de la Quality Gate"
+                    echo "🔍 Revisar SonarQube para detalles: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
                 }
             }
         }
@@ -112,7 +110,7 @@ pipeline {
             echo "💡 Verificar:"
             echo "   - Tests unitarios"
             echo "   - Cobertura de código"
-            echo "   - Métricas en SonarQube"
+            echo "   - Métricas en SonarQube: http://localhost:9000/dashboard?id=${SONAR_PROJECT_KEY}"
         }
     }
 }
