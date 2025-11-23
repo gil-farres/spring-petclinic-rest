@@ -1,11 +1,6 @@
 pipeline {
     agent any
 
-    tools {
-        maven 'M3'
-        jdk 'JDK11'
-    }
-
     environment {
         SONAR_PROJECT_KEY = 'backend-petclinic'
         SONAR_PROJECT_NAME = 'Backend PetClinic'
@@ -18,6 +13,14 @@ pipeline {
                 script {
                     currentBuild.description = "Backend Build #${currentBuild.number}"
                 }
+            }
+        }
+
+        stage('Verify Environment') {
+            steps {
+                bat 'java -version'
+                bat 'mvn --version'
+                bat 'if exist pom.xml (echo "✅ pom.xml encontrado") else (echo "❌ pom.xml no encontrado" && exit 1)'
             }
         }
 
